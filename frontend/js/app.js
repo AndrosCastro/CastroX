@@ -119,6 +119,8 @@ async function router() {
 
   const route = ROUTES[path];
   if (!route || (route.admin && !auth.isAdmin)) { location.hash = '#/dashboard'; return; }
+  // Con la contraseña inicial solo se permite entrar a Ajustes para cambiarla
+  if (auth.user?.mustChangePassword && path !== '/settings') { location.hash = '#/settings'; return; }
 
   if (!layoutReady) renderLayout();
   document.getElementById('page-title').textContent = route.title;

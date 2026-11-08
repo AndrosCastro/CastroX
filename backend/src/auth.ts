@@ -10,7 +10,11 @@ export interface AuthUser {
   username: string;
   fullName: string;
   role: Role;
+  /** true mientras el usuario siga usando la contraseña inicial por defecto */
+  mustChangePassword?: boolean;
 }
+
+export const DEFAULT_PASSWORD = 'admin123';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -34,6 +38,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
   try {
     const payload = jwt.verify(token, config.jwtSecret) as AuthUser;
     req.user = { id: payload.id, username: payload.username, fullName: payload.fullName, role: payload.role };
+    if (payload.mustChangePassword) req.user.mustChangePassword = true;
     next();
   } catch {
     next(new HttpError(401, 'Sesión expirada, vuelve a iniciar sesión'));

@@ -34,7 +34,7 @@ export function renderLogin(root, onLogin) {
             <input class="input lg" id="password" name="password" type="password" autocomplete="current-password" required />
           </div>
           <button class="btn primary lg block" type="submit">Entrar</button>
-          <div class="hint">${icon('info', 16)} Primer acceso: usuario <b>admin</b> y contraseña <b>admin123</b>. Cámbiala en <i>Ajustes</i>.</div>
+          <div class="hint">${icon('info', 16)} ¿No tienes usuario? Pídeselo al administrador de tu inventario.</div>
         </form>
       </section>
     </div>`;

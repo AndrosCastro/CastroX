@@ -47,6 +47,20 @@ services:
       - "${APP_HTTPS_PORT:-3443}:3443"
     volumes:
       - castrox-certs:/app/certs
+      # El frontend se monta desde la carpeta local: los cambios se ven al recargar el navegador
+      - ./frontend:/app/public:ro
+    restart: unless-stopped
+
+  # Acceso público desde internet con Cloudflare Tunnel (gratis, HTTPS válido).
+  # Iniciar con:  docker compose --profile tunnel up -d
+  # Ver la dirección pública:  docker compose logs tunnel  (busca https://....trycloudflare.com)
+  tunnel:
+    image: cloudflare/cloudflared:2024.12.2
+    container_name: castrox-tunnel
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate --url http://app:3000
+    depends_on:
+      - app
     restart: unless-stopped
 
 volumes:

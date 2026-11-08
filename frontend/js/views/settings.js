@@ -6,6 +6,7 @@ export function renderSettings(root) {
   const u = auth.user;
   const theme = document.documentElement.dataset.theme;
   root.innerHTML = `
+    ${u.mustChangePassword ? `<div class="notice warning" style="margin-bottom:18px">${icon('alert', 18)}<div><b>Por seguridad, cambia la contraseña inicial</b> antes de usar la aplicación. Nadie más debe poder entrar con la contraseña por defecto.</div></div>` : ''}
     <div class="grid halves">
       <div class="stack">
         <div class="card card-pad">
@@ -52,7 +53,7 @@ export function renderSettings(root) {
     root.querySelectorAll('[data-theme-switch] button').forEach((x) => x.classList.toggle('active', x === b));
   }));
   const cur = root.querySelector('[data-currency]');
-  cur.value = prefs.get('currency', 'MXN');
+  cur.value = prefs.get('currency', 'HNL');
   cur.addEventListener('change', () => { prefs.set('currency', cur.value); toast(`Moneda cambiada a ${cur.value}`, 'success'); });
   root.querySelectorAll('[data-pref]').forEach((c) => c.addEventListener('change', () => prefs.set(c.dataset.pref, c.checked ? 'on' : 'off')));
 
@@ -70,9 +71,12 @@ export function renderSettings(root) {
     const btn = form.querySelector('button[type="submit"]');
     setBusy(btn, true);
     try {
-      await api('/auth/password', { method: 'PUT', body: { currentPassword: data.currentPassword, newPassword: data.newPassword } });
+      const r = await api('/auth/password', { method: 'PUT', body: { currentPassword: data.currentPassword, newPassword: data.newPassword } });
+      const wasForced = auth.user.mustChangePassword;
+      if (r?.token) auth.save(r.token, r.user);
       toast('Contraseña actualizada', 'success');
       form.reset();
+      if (wasForced) location.hash = '#/dashboard';
     } catch (ex) {
       err.textContent = ex.message;
       err.classList.remove('hidden');

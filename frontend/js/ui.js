@@ -52,11 +52,11 @@ export const prefs = {
 };
 
 // ---------- Formato ----------
-export const CURRENCIES = { MXN: 'es-MX', USD: 'en-US', EUR: 'es-ES', COP: 'es-CO', ARS: 'es-AR', CLP: 'es-CL', PEN: 'es-PE', GTQ: 'es-GT' };
+export const CURRENCIES = { MXN: 'es-MX', USD: 'en-US', EUR: 'es-ES', COP: 'es-CO', ARS: 'es-AR', CLP: 'es-CL', PEN: 'es-PE', GTQ: 'es-GT', HNL: 'es-HN' };
 export function fmtMoney(n) {
-  const cur = prefs.get('currency', 'MXN');
+  const cur = prefs.get('currency', 'HNL');
   try {
-    return new Intl.NumberFormat(CURRENCIES[cur] || 'es-MX', { style: 'currency', currency: cur }).format(Number(n) || 0);
+    return new Intl.NumberFormat(CURRENCIES[cur] || 'es-HN', { style: 'currency', currency: cur }).format(Number(n) || 0);
   } catch {
     return `$${(Number(n) || 0).toFixed(2)}`;
   }

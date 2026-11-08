@@ -75,6 +75,50 @@ Si Windows bloquea la conexión, permite los puertos 3000 y 3443 en el Firewall 
 
 En la pantalla **Escanear**, deja el cursor en el campo "Código manual o lector USB". Estos lectores escriben el código y presionan Enter, así que funcionan sin configurar nada.
 
+## Acceso desde internet (cualquier celular, cualquier red)
+
+Al iniciar sesión con la contraseña inicial `admin123`, la app obliga a cambiarla. Después de 10 intentos fallidos, bloquea el inicio de sesión de ese usuario desde esa IP durante 15 minutos.
+
+### Opción A · Túnel gratis desde tu PC (Cloudflare Tunnel)
+
+```bash
+docker compose --profile tunnel up -d
+docker compose logs tunnel | findstr trycloudflare      # en Linux/Mac: | grep trycloudflare
+```
+
+La dirección `https://xxxx.trycloudflare.com` que aparece ya se puede abrir desde cualquier celular. Tiene HTTPS válido, así que la cámara funciona sin avisos.
+
+Limitaciones:
+- La PC debe estar encendida y con Docker Desktop abierto.
+- La dirección **cambia** cada vez que se reinicia el contenedor `tunnel`.
+
+### Opción B · Servidor VPS (24/7, dirección fija)
+
+Necesitas un VPS con **Ubuntu 22.04/24.04 y al menos 2 GB de RAM**, por ejemplo de DigitalOcean, Hetzner, Contabo o Vultr.
+
+1. (Opcional) Si tienes dominio, crea un registro DNS tipo **A** que apunte a la IP del servidor.
+2. Entra al servidor por SSH y ejecuta:
+   ```bash
+   git clone https://github.com/AndrosCastro/CastroX.git && cd CastroX
+   sudo bash deploy/setup-vps.sh midominio.com     # sin dominio: sudo bash deploy/setup-vps.sh
+   ```
+3. El script hace lo siguiente:
+   - instala Docker
+   - crea memoria swap y abre los puertos 80 y 443
+   - genera `.env` con claves aleatorias y **muestra la contraseña del admin**
+   - levanta SQL Server, la app y **Caddy** (HTTPS automático con Let's Encrypt)
+   - programa un respaldo diario de la base a las 3:00 am, que queda en `backups/`
+
+Sin dominio, la app queda en `https://<IP-con-guiones>.sslip.io`, por ejemplo `https://203-0-113-5.sslip.io`.
+
+Para actualizar el servidor cuando cambies el código:
+
+```bash
+git pull && docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Para hacer un respaldo manual: `bash deploy/backup.sh`.
+
 ## Comandos útiles
 
 ```bash
