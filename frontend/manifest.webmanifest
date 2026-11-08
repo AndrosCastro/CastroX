@@ -1,0 +1,13 @@
+{
+  "name": "CastroX Inventario",
+  "short_name": "CastroX",
+  "description": "Inventario de productos con lector de códigos QR",
+  "start_url": "/#/dashboard",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "lang": "es",
+  "icons": [
+    { "src": "/img/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
