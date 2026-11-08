@@ -1,5 +1,5 @@
 // Formularios y diálogos compartidos entre vistas
-import { api, auth, qrUrl, qs } from './api.js';
+import { api, auth, qrUrl, qs, isApp, saveBlob } from './api.js';
 import {
   openModal, confirmDialog, toast, icon, esc, $, formToObject, setBusy, fmtMoney, fmtQty, fmtDate,
   stockBadge, stockStatus, categoryBadge, productThumb, movementQty, MOVE_TYPES, debounce, emptyState, loading,
@@ -247,7 +247,7 @@ export async function openProductDetail(id, { onChange } = {}) {
             <div class="mono">${esc(p.code)}</div>
           </div>
           <button class="btn block" data-act="print">${icon('printer', 18)}Imprimir etiqueta</button>
-          <a class="btn block" href="${qrUrl(p.code, 800)}" download="QR-${esc(p.code)}.png">${icon('download', 18)}Descargar QR</a>
+          <button class="btn block" data-act="qrdl">${icon('download', 18)}Descargar QR</button>
         </div>
         <div class="stack">
           <div class="result-head">
@@ -289,6 +289,7 @@ export async function openProductDetail(id, { onChange } = {}) {
 
     const handlers = {
       print: () => printLabels([p]),
+      qrdl: () => downloadQr(p),
       IN: () => openMovementForm({ product: p, type: 'IN', onSaved: refresh }),
       OUT: () => openMovementForm({ product: p, type: 'OUT', onSaved: refresh }),
       ADJUST: () => openMovementForm({ product: p, type: 'ADJUST', quantity: p.quantity, onSaved: refresh }),
@@ -391,11 +392,6 @@ export function pickProduct(title = 'Selecciona un producto') {
 // ---------------------------------------------------------------------------
 export function printLabels(products) {
   if (!products.length) return;
-  const win = window.open('', '_blank');
-  if (!win) {
-    toast('Permite las ventanas emergentes para imprimir etiquetas', 'warning');
-    return;
-  }
   const labels = products.map((p) => `
     <div class="label">
       <img src="${location.origin}${qrUrl(p.code, 300)}" />
@@ -403,7 +399,7 @@ export function printLabels(products) {
       <div class="code">${esc(p.code)}</div>
       ${Number(p.price) > 0 ? `<div class="price">${esc(fmtMoney(p.price))}</div>` : ''}
     </div>`).join('');
-  win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas CastroX</title>
+  const head = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiquetas CastroX</title>
     <style>
       @page { margin: 10mm; }
       body { font-family: Arial, Helvetica, sans-serif; margin: 0; color: #000; }
@@ -415,7 +411,20 @@ export function printLabels(products) {
       .price { font-size: 13pt; font-weight: bold; margin-top: 1mm; }
       .bar { padding: 10px; text-align: center; font-size: 14px; }
       @media print { .bar { display: none; } }
-    </style></head><body>
+    </style></head><body>`;
+
+  // App Android: usa el servicio de impresión del sistema (impresora o "Guardar como PDF")
+  if (isApp) {
+    window.CastroXApp.printHtml(`${head}<div class="grid">${labels}</div></body></html>`, `Etiquetas CastroX (${products.length})`);
+    return;
+  }
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    toast('Permite las ventanas emergentes para imprimir etiquetas', 'warning');
+    return;
+  }
+  win.document.write(`${head}
     <div class="bar">Vista previa de ${products.length} etiqueta(s) · <button onclick="print()">Imprimir</button></div>
     <div class="grid">${labels}</div>
     <script>
@@ -424,4 +433,16 @@ export function printLabels(products) {
     <\/script>
     </body></html>`);
   win.document.close();
+}
+
+/** Descarga la imagen QR de un producto (en la app Android se guarda en Descargas) */
+export async function downloadQr(p) {
+  try {
+    const res = await fetch(qrUrl(p.code, 800));
+    if (!res.ok) throw new Error('qr');
+    await saveBlob(await res.blob(), `QR-${String(p.code).replace(/[^\w.-]+/g, '_')}.png`);
+    if (!isApp) toast('Imagen QR descargada', 'success');
+  } catch {
+    toast('No se pudo descargar el código QR', 'error');
+  }
 }

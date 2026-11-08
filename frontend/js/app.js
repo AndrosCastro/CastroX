@@ -136,6 +136,28 @@ async function router() {
 }
 
 window.addEventListener('hashchange', router);
+
+// Botón "Atrás" de la app Android: devuelve true si la página lo manejó
+window.__castroxBack = () => {
+  const modals = document.querySelectorAll('#modal-root .modal-backdrop.open');
+  const top = modals[modals.length - 1];
+  if (top) {
+    top.querySelector('[data-close]')?.click();
+    return true;
+  }
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar?.classList.contains('open')) {
+    sidebar.classList.remove('open');
+    document.getElementById('overlay')?.classList.remove('show');
+    return true;
+  }
+  const { path } = parseHash();
+  if (auth.token && path !== '/dashboard' && path !== '/login' && !auth.user?.mustChangePassword) {
+    location.hash = '#/dashboard';
+    return true;
+  }
+  return false;
+};
 window.addEventListener('themechange', () => {
   if (parseHash().path === '/dashboard') router();
 });

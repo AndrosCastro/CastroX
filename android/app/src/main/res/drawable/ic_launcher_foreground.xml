@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícono CastroX: marco de escáner con X (área segura del ícono adaptable) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="22" android:translateY="22">
+        <path
+            android:pathData="M14,22v-6a2,2 0,0 1,2 -2h6M42,14h6a2,2 0,0 1,2 2v6M50,42v6a2,2 0,0 1,-2 2h-6M22,50h-6a2,2 0,0 1,-2 -2v-6"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M24,24L40,40M40,24L24,40"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="4"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

@@ -119,6 +119,35 @@ git pull && docker compose -f docker-compose.prod.yml up -d --build
 
 Para hacer un respaldo manual: `bash deploy/backup.sh`.
 
+## App Android (APK)
+
+La app nativa está en [`android/`](android/). Carga CastroX desde el servidor y agrega lo siguiente:
+- **cámara** para el escáner, con permisos de Android
+- **Descargas**: los CSV y las imágenes QR se guardan en la carpeta *Descargas* del teléfono
+- **impresión** de etiquetas con el sistema de Android, en una impresora o con *Guardar como PDF*
+- el botón **Atrás** cierra ventanas o vuelve al panel
+- una pantalla para **conectar o cambiar el servidor**, escribiendo la dirección o escaneando un código QR
+
+### Instalar en el teléfono
+
+1. Desde el teléfono, abre `<tu-servidor>/downloads/CastroX.apk`. El enlace también está en la pantalla de inicio de sesión y en **Ajustes → App Android**.
+2. Abre el archivo descargado y permite *Instalar apps desconocidas* cuando Android lo pida.
+3. Al abrir la app, se conecta sola al servidor con el que se compiló. Si la dirección cambió, la app muestra la pantalla de conexión. Ahí toca **Escanear código QR de conexión** y apunta al QR de **Ajustes → App Android** de una computadora donde CastroX ya esté abierto.
+
+### Compilar el APK
+
+Necesitas Docker. No hace falta Android Studio.
+
+```powershell
+.\build-apk.ps1                                  # usa la dirección actual del túnel como predeterminada
+.\build-apk.ps1 -Server https://mi-dominio.com   # para un servidor fijo (VPS)
+.\build-apk.ps1 -VersionName 1.1.0 -VersionCode 2   # nueva versión (sube VersionCode para poder actualizar)
+```
+
+El APK queda en `frontend/downloads/CastroX.apk` y la app lo ofrece para descargar.
+
+> ⚠️ **Respalda `android/keystore/` y `android/keystore.properties`.** Son la firma de la app y no se suben a Git. Sin ellos no podrás publicar actualizaciones que se instalen encima de la versión actual: habría que desinstalarla primero.
+
 ## Comandos útiles
 
 ```bash

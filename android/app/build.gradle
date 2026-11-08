@@ -1,0 +1,58 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Datos de firma (archivo local, nunca se sube a Git)
+def keystoreProps = new Properties()
+def keystoreFile = rootProject.file('keystore.properties')
+if (keystoreFile.exists()) {
+    keystoreFile.withInputStream { keystoreProps.load(it) }
+}
+
+def defaultServer = (project.findProperty('castroxServer') ?: '').toString()
+
+android {
+    namespace 'com.castrox.inventario'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.castrox.inventario'
+        minSdk 24
+        targetSdk 34
+        versionCode((project.findProperty('versionCode') ?: '1').toString().toInteger())
+        versionName((project.findProperty('versionName') ?: '1.0.0').toString())
+        buildConfigField 'String', 'DEFAULT_SERVER', "\"${defaultServer}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        release {
+            if (keystoreFile.exists()) {
+                storeFile rootProject.file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Sin minificar: los métodos @JavascriptInterface deben conservarse
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}

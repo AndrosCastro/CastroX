@@ -1,4 +1,4 @@
-import { api, auth } from '../api.js';
+import { api, auth, isApp, qrUrl } from '../api.js';
 import { icon, esc, toast, prefs, CURRENCIES, formToObject, setBusy, initials } from '../ui.js';
 import { applyTheme } from '../theme.js';
 
@@ -46,7 +46,28 @@ export function renderSettings(root) {
           <button class="btn primary" type="submit">Actualizar contraseña</button>
         </form>
       </div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <div class="card-head"><h3>${icon('scan', 18)} App Android</h3></div>
+      <div class="card-body">
+        ${isApp ? `
+          <div class="stack">
+            <p style="margin:0">Estás usando la app de CastroX <b>v${esc(window.CastroXApp.getVersion())}</b>.</p>
+            <div class="field"><label>Servidor conectado</label><input class="input mono" value="${esc(location.origin)}" disabled /></div>
+            <button class="btn" data-change-server>${icon('settings', 18)}Cambiar servidor</button>
+          </div>` : `
+          <div class="detail" style="grid-template-columns:180px 1fr">
+            <div class="qr-box"><img src="${qrUrl(location.origin, 360)}" alt="QR de conexión" /><div class="mono small">${esc(location.origin)}</div></div>
+            <div class="stack">
+              <p style="margin:0"><b>1.</b> Descarga e instala la app en el teléfono Android.</p>
+              <a class="btn primary" href="/downloads/CastroX.apk" download>${icon('download', 18)}Descargar APK para Android</a>
+              <p style="margin:0"><b>2.</b> Abre la app y toca <i>Escanear código QR de conexión</i>. Luego apunta a este código para conectarla con este servidor.</p>
+              <p class="muted small" style="margin:0">Al instalar, Android puede pedir permiso para "instalar apps desconocidas". Es normal porque la app no viene de Google Play.</p>
+            </div>
+          </div>`}
+      </div>
     </div>`;
+  root.querySelector('[data-change-server]')?.addEventListener('click', () => window.CastroXApp.changeServer());
 
   root.querySelectorAll('[data-theme-switch] button').forEach((b) => b.addEventListener('click', () => {
     applyTheme(b.dataset.v);

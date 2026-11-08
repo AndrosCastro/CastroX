@@ -35,12 +35,16 @@ export function renderLogin(root, onLogin) {
           </div>
           <button class="btn primary lg block" type="submit">Entrar</button>
           <div class="hint">${icon('info', 16)} ¿No tienes usuario? Pídeselo al administrador de tu inventario.</div>
+          ${window.CastroXApp
+            ? '<button type="button" class="btn ghost block" data-change-server>Cambiar servidor</button>'
+            : `<a class="btn block" href="/downloads/CastroX.apk" download>${icon('download', 18)}Descargar app para Android</a>`}
         </form>
       </section>
     </div>`;
 
   const form = root.querySelector('#login-form');
   const err = form.querySelector('.form-error');
+  form.querySelector('[data-change-server]')?.addEventListener('click', () => window.CastroXApp.changeServer());
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.classList.add('hidden');

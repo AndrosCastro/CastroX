@@ -7,3 +7,12 @@ certs/
 Thumbs.db
 .vscode/
 backups/
+
+# Android
+android/keystore/
+android/keystore.properties
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/app/src/main/assets/html5-qrcode.min.js

@@ -67,7 +67,24 @@ export async function download(path, fallbackName) {
   const res = await api(path, { raw: true });
   const cd = res.headers.get('Content-Disposition') || '';
   const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || fallbackName;
-  const blob = await res.blob();
+  await saveBlob(await res.blob(), name);
+}
+
+/** true cuando la página corre dentro de la app Android de CastroX */
+export const isApp = typeof window !== 'undefined' && !!window.CastroXApp;
+
+/** Guarda un archivo: en la app Android lo envía a Descargas; en el navegador lo descarga. */
+export async function saveBlob(blob, name) {
+  if (isApp) {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+    window.CastroXApp.saveFile(name, blob.type || 'application/octet-stream', String(dataUrl).split(',')[1] || '');
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = Object.assign(document.createElement('a'), { href: url, download: name });
   document.body.appendChild(a);

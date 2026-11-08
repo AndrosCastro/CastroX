@@ -30,6 +30,8 @@ app.use((_req, res, next) => {
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (_req, res) => {
+  // Permite que la app Android verifique el servidor desde su pantalla de conexión
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.json({ status: 'ok', app: 'CastroX', time: new Date().toISOString() });
 });
 
