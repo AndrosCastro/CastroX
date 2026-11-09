@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { getPool } from '../db';
+import { query } from '../db';
 import { requireAdmin, requireAuth } from '../auth';
 import { HttpError } from '../errors';
 
@@ -34,24 +33,23 @@ const updateSchema = z.object({
 });
 
 router.get('/', async (_req, res) => {
-  const r = await getPool().request().query(`
-    SELECT u.Id AS id, u.Username AS username, u.FullName AS fullName, u.Role AS role, u.Active AS active, u.CreatedAt AS createdAt,
-           (SELECT COUNT(*) FROM dbo.Movements m WHERE m.UserId = u.Id) AS movements
-    FROM dbo.Users u ORDER BY u.Username`);
-  res.json(r.recordset);
+  const r = await query(`
+    SELECT u.Id AS id, u.Username AS username, u.FullName AS "fullName", u.Role AS role, u.Active AS active, u.CreatedAt AS "createdAt",
+           (SELECT COUNT(*) FROM Movements m WHERE m.UserId = u.Id) AS movements
+    FROM Users u ORDER BY u.Username`);
+  res.json(r.rows);
 });
 
 router.post('/', async (req, res) => {
   const data = createSchema.parse(req.body);
   const hash = await bcrypt.hash(data.password, 10);
-  const r = await getPool()
-    .request()
-    .input('u', sql.NVarChar(50), data.username)
-    .input('n', sql.NVarChar(100), data.fullName)
-    .input('h', sql.NVarChar(200), hash)
-    .input('r', sql.NVarChar(20), data.role)
-    .query('INSERT INTO dbo.Users (Username, FullName, PasswordHash, Role) OUTPUT INSERTED.Id AS id VALUES (@u, @n, @h, @r)');
-  res.status(201).json({ id: r.recordset[0].id, username: data.username, fullName: data.fullName, role: data.role, active: true });
+  const r = await query('INSERT INTO Users (Username, FullName, PasswordHash, Role) VALUES (@u, @n, @h, @r) RETURNING Id AS id', {
+    u: data.username,
+    n: data.fullName,
+    h: hash,
+    r: data.role,
+  });
+  res.status(201).json({ id: r.rows[0].id, username: data.username, fullName: data.fullName, role: data.role, active: true });
 });
 
 router.put('/:id', async (req, res) => {
@@ -60,27 +58,22 @@ router.put('/:id', async (req, res) => {
   if (id === req.user!.id && (data.role !== 'admin' || !data.active)) {
     throw new HttpError(400, 'No puedes quitarte el rol de administrador ni desactivar tu propia cuenta');
   }
-  const request = getPool()
-    .request()
-    .input('id', sql.Int, id)
-    .input('n', sql.NVarChar(100), data.fullName)
-    .input('r', sql.NVarChar(20), data.role)
-    .input('a', sql.Bit, data.active);
+  const params: Record<string, unknown> = { id, n: data.fullName, r: data.role, a: data.active };
   let setPassword = '';
   if (data.password) {
-    request.input('h', sql.NVarChar(200), await bcrypt.hash(data.password, 10));
+    params.h = await bcrypt.hash(data.password, 10);
     setPassword = ', PasswordHash = @h';
   }
-  const r = await request.query(`UPDATE dbo.Users SET FullName = @n, Role = @r, Active = @a${setPassword} WHERE Id = @id`);
-  if (!r.rowsAffected[0]) throw new HttpError(404, 'Usuario no encontrado');
+  const r = await query(`UPDATE Users SET FullName = @n, Role = @r, Active = @a${setPassword} WHERE Id = @id`, params);
+  if (!r.rowCount) throw new HttpError(404, 'Usuario no encontrado');
   res.json({ ok: true });
 });
 
 router.delete('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (id === req.user!.id) throw new HttpError(400, 'No puedes eliminar tu propia cuenta');
-  const r = await getPool().request().input('id', sql.Int, id).query('DELETE FROM dbo.Users WHERE Id = @id');
-  if (!r.rowsAffected[0]) throw new HttpError(404, 'Usuario no encontrado');
+  const r = await query('DELETE FROM Users WHERE Id = @id', { id });
+  if (!r.rowCount) throw new HttpError(404, 'Usuario no encontrado');
   res.json({ ok: true });
 });
 

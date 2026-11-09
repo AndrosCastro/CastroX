@@ -2,22 +2,21 @@ name: castrox
 
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres:16-alpine
     container_name: castrox-db
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${DB_PASSWORD}
-      MSSQL_PID: Developer
+      POSTGRES_USER: castrox
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-castrox}
     ports:
-      - "${DB_HOST_PORT:-1433}:1433"
+      - "${DB_HOST_PORT:-5432}:5432"
     volumes:
-      - castrox-sqldata:/var/opt/mssql
+      - castrox-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U castrox -d ${DB_NAME:-castrox}"]
+      interval: 5s
       timeout: 5s
       retries: 20
-      start_period: 30s
     restart: unless-stopped
 
   app:
@@ -32,10 +31,10 @@ services:
       HTTPS_PORT: 3443
       ENABLE_HTTPS: ${ENABLE_HTTPS:-true}
       DB_HOST: db
-      DB_PORT: 1433
-      DB_USER: sa
+      DB_PORT: 5432
+      DB_USER: castrox
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME:-CastroX}
+      DB_NAME: ${DB_NAME:-castrox}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES: ${JWT_EXPIRES:-12h}
       ADMIN_USER: ${ADMIN_USER:-admin}
@@ -64,5 +63,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  castrox-sqldata:
+  castrox-pgdata:
   castrox-certs:

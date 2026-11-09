@@ -18,28 +18,51 @@ La app se adapta al celular: tiene barra de navegación inferior y un botón cen
 
 ## Tecnologías
 
-- **Backend:** Node.js 20, Express 5 y TypeScript, con validación en Zod y sesiones con JWT y bcrypt
-- **Base de datos:** Microsoft SQL Server 2022
+- **Backend:** Node.js 20 (24 en Vercel), Express 5 y TypeScript, con validación en Zod y sesiones con JWT y bcrypt
+- **Base de datos:** PostgreSQL 16 (Neon en la nube)
 - **Frontend:** HTML, CSS y JavaScript (módulos ES) sin necesidad de compilar. Usa html5-qrcode para el escáner y Chart.js para las gráficas
-- **Infraestructura:** Docker y Docker Compose
+- **Infraestructura:** Vercel (en la nube) o Docker y Docker Compose (local / VPS)
 
 ```
 app-inventario/
 ├── backend/            API en TypeScript
 │   └── src/
-│       ├── index.ts    servidor HTTP/HTTPS y generador de QR
+│       ├── app.ts      app Express: rutas de la API y generador de QR
+│       ├── index.ts    servidor HTTP/HTTPS (Docker)
 │       ├── db.ts       conexión, creación de tablas y datos iniciales
 │       ├── auth.ts     JWT y roles
 │       └── routes/     auth, products, movements, categories, dashboard, users
 ├── frontend/           interfaz web (SPA)
 │   ├── css/styles.css
 │   └── js/             app.js, api.js, ui.js, scanner.js, forms.js, views/
+├── api/index.ts        entrada de la API en Vercel (usa backend/src/app.ts)
+├── vercel.json         configuración de Vercel
+├── package.json        dependencias para Vercel
 ├── Dockerfile
 ├── docker-compose.yml
 └── .env.example
 ```
 
-## Cómo ejecutarla
+## En la nube (Vercel)
+
+La app está publicada en **https://castrox.vercel.app**.
+
+- **Vercel** (proyecto `castrox`) sirve el frontend como sitio estático y la API como una función serverless (`api/index.ts`).
+- **Neon** (base `castrox-db`) es la base de datos PostgreSQL. Está conectada al proyecto y Vercel define sola la variable `DATABASE_URL`.
+- Variables configuradas en Vercel: `JWT_SECRET`, `ADMIN_PASSWORD` y `SEED_DEMO=false`.
+
+Las tablas y el usuario administrador se crean solos con la primera petición. La contraseña inicial del admin es el valor de `ADMIN_PASSWORD`, no `admin123`.
+
+Para publicar cambios necesitas la CLI de Vercel. Sin Node instalado, puedes correrla con Docker; `VERCEL_TOKEN` es un token creado en vercel.com/account/tokens:
+
+```bash
+docker run --rm -e VERCEL_TOKEN -v "$PWD":/work -w /work node:24-alpine \
+  sh -c 'npx -y vercel@65.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"'
+```
+
+Otra opción: conecta el repositorio de GitHub al proyecto desde el panel de Vercel, y cada `git push` a `main` se publicará solo.
+
+## En tu computadora (Docker)
 
 Necesitas [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
@@ -47,7 +70,7 @@ Necesitas [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 # 1. Crea el archivo de configuración y cambia las contraseñas
 cp .env.example .env
 
-# 2. Construye y levanta la app y SQL Server
+# 2. Construye y levanta la app y PostgreSQL
 docker compose up -d --build
 ```
 
@@ -58,7 +81,7 @@ Abre **http://localhost:3000** e inicia sesión con:
 
 Cambia la contraseña en **Ajustes** después del primer acceso.
 
-> La primera vez, SQL Server tarda entre 20 y 40 segundos en arrancar. Durante ese tiempo la app espera y crea sola la base de datos `CastroX`, las tablas y unos datos de ejemplo. Si no quieres los datos de ejemplo, pon `SEED_DEMO=false` en `.env`.
+> La primera vez, la app crea sola las tablas y unos datos de ejemplo. Si no quieres los datos de ejemplo, pon `SEED_DEMO=false` en `.env`.
 
 ### Escanear desde el celular
 
@@ -75,7 +98,9 @@ Si Windows bloquea la conexión, permite los puertos 3000 y 3443 en el Firewall 
 
 En la pantalla **Escanear**, deja el cursor en el campo "Código manual o lector USB". Estos lectores escriben el código y presionan Enter, así que funcionan sin configurar nada.
 
-## Acceso desde internet (cualquier celular, cualquier red)
+## Otras formas de acceso desde internet
+
+La forma más simple es Vercel (ver arriba). Estas opciones sirven si prefieres alojarla tú.
 
 Al iniciar sesión con la contraseña inicial `admin123`, la app obliga a cambiarla. Después de 10 intentos fallidos, bloquea el inicio de sesión de ese usuario desde esa IP durante 15 minutos.
 
@@ -94,7 +119,7 @@ Limitaciones:
 
 ### Opción B · Servidor VPS (24/7, dirección fija)
 
-Necesitas un VPS con **Ubuntu 22.04/24.04 y al menos 2 GB de RAM**, por ejemplo de DigitalOcean, Hetzner, Contabo o Vultr.
+Necesitas un VPS con **Ubuntu 22.04/24.04 y al menos 1 GB de RAM**, por ejemplo de DigitalOcean, Hetzner, Contabo o Vultr.
 
 1. (Opcional) Si tienes dominio, crea un registro DNS tipo **A** que apunte a la IP del servidor.
 2. Entra al servidor por SSH y ejecuta:
@@ -106,7 +131,7 @@ Necesitas un VPS con **Ubuntu 22.04/24.04 y al menos 2 GB de RAM**, por ejemplo 
    - instala Docker
    - crea memoria swap y abre los puertos 80 y 443
    - genera `.env` con claves aleatorias y **muestra la contraseña del admin**
-   - levanta SQL Server, la app y **Caddy** (HTTPS automático con Let's Encrypt)
+   - levanta PostgreSQL, la app y **Caddy** (HTTPS automático con Let's Encrypt)
    - programa un respaldo diario de la base a las 3:00 am, que queda en `backups/`
 
 Sin dominio, la app queda en `https://<IP-con-guiones>.sslip.io`, por ejemplo `https://203-0-113-5.sslip.io`.
@@ -117,7 +142,11 @@ Para actualizar el servidor cuando cambies el código:
 git pull && docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-Para hacer un respaldo manual: `bash deploy/backup.sh`.
+Para hacer un respaldo manual: `bash deploy/backup.sh`. Para restaurar uno:
+
+```bash
+gunzip -c backups/ARCHIVO.sql.gz | docker exec -i castrox-db psql -U castrox -d castrox
+```
 
 ## App Android (APK)
 
@@ -139,6 +168,7 @@ La app nativa está en [`android/`](android/). Carga CastroX desde el servidor y
 Necesitas Docker. No hace falta Android Studio.
 
 ```powershell
+.\build-apk.ps1 -Server https://castrox.vercel.app   # la app publicada en Vercel
 .\build-apk.ps1                                  # usa la dirección actual del túnel como predeterminada
 .\build-apk.ps1 -Server https://mi-dominio.com   # para un servidor fijo (VPS)
 .\build-apk.ps1 -VersionName 1.1.0 -VersionCode 2   # nueva versión (sube VersionCode para poder actualizar)
@@ -158,14 +188,18 @@ docker compose down -v          # detener y BORRAR la base de datos
 docker compose up -d --build    # reconstruir después de cambiar el código
 ```
 
-### Conectarse a SQL Server
+### Conectarse a la base de datos
 
-Puedes abrir la base de datos con SQL Server Management Studio, Azure Data Studio o la extensión de VS Code:
+Puedes abrir la base local con DBeaver, pgAdmin o la extensión PostgreSQL de VS Code:
 
-- Servidor: `localhost,1433`
-- Usuario: `sa`
+- Servidor: `localhost`, puerto `5432`
+- Usuario: `castrox`
 - Contraseña: el valor de `DB_PASSWORD` en `.env`
-- Base de datos: `CastroX`
+- Base de datos: `castrox`
+
+O desde la terminal: `docker exec -it castrox-db psql -U castrox -d castrox`.
+
+La base de la nube se administra en el panel de Vercel: proyecto `castrox` → **Storage** → `castrox-db`.
 
 Tablas: `Users`, `Categories`, `Products` y `Movements`.
 

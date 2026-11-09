@@ -1,0 +1,12 @@
+android
+deploy
+CastroX
+backend/node_modules
+backend/dist
+node_modules
+certs
+backups
+.env
+*.ps1
+Dockerfile
+docker-compose*.yml

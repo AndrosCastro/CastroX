@@ -18,7 +18,7 @@ if ! command -v docker >/dev/null 2>&1; then
   curl -fsSL https://get.docker.com | sh
 fi
 
-# 2. Memoria de intercambio (SQL Server necesita ~2 GB de RAM)
+# 2. Memoria de intercambio (ayuda en servidores de 1 GB de RAM)
 if [ "$(swapon --show | wc -l)" -eq 0 ]; then
   echo ">> Creando 2 GB de swap…"
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
@@ -48,13 +48,12 @@ if [ ! -f .env ]; then
   cat > .env <<EOF
 DOMAIN=$DOMAIN
 DB_PASSWORD=$DB_PASSWORD
-DB_NAME=CastroX
+DB_NAME=castrox
 JWT_SECRET=$(rand 64)
 JWT_EXPIRES=12h
 ADMIN_USER=admin
 ADMIN_PASSWORD=$ADMIN_PASSWORD
 SEED_DEMO=false
-MSSQL_PID=Express
 EOF
   chmod 600 .env
   echo ""

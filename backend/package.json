@@ -13,7 +13,7 @@
     "bcryptjs": "2.4.3",
     "express": "5.1.0",
     "jsonwebtoken": "9.0.2",
-    "mssql": "11.0.1",
+    "pg": "8.13.1",
     "qrcode": "1.5.4",
     "selfsigned": "2.4.1",
     "zod": "3.24.1"
@@ -22,7 +22,7 @@
     "@types/bcryptjs": "2.4.6",
     "@types/express": "5.0.1",
     "@types/jsonwebtoken": "9.0.7",
-    "@types/mssql": "9.1.5",
+    "@types/pg": "8.11.10",
     "@types/node": "20.17.10",
     "@types/qrcode": "1.5.5",
     "typescript": "5.7.3"

@@ -15,7 +15,8 @@ export const nonNegative = z.coerce.number().min(0).max(9_999_999_999);
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export const escapeLike = (s: string) => s.replace(/[[%_]/g, '[$&]');
+/** Escapa los comodines de LIKE/ILIKE (en Postgres el carácter de escape por defecto es \) */
+export const escapeLike = (s: string) => s.replace(/[\\%_]/g, '\\$&');
 
 export function generateCode(): string {
   const t = Date.now().toString(36).toUpperCase();

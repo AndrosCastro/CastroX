@@ -62,12 +62,16 @@ export function errorHandler(err: any, _req: Request, res: Response, _next: Next
     res.status(400).json({ error: 'JSON inválido' });
     return;
   }
-  const sqlNumber = err?.number ?? err?.originalError?.info?.number;
-  if (sqlNumber === 2627 || sqlNumber === 2601) {
+  // Códigos de error de Postgres: 23505 = valor duplicado, 23503 = llave foránea
+  if (err?.code === '23505') {
     res.status(409).json({ error: 'Ya existe un registro con ese valor (código, nombre o usuario duplicado)' });
     return;
   }
-  if (sqlNumber === 547) {
+  if (err?.code === '22P02') {
+    res.status(400).json({ error: 'Identificador o valor inválido' });
+    return;
+  }
+  if (err?.code === '23503') {
     res.status(409).json({ error: 'No se puede completar: el registro está relacionado con otros datos' });
     return;
   }

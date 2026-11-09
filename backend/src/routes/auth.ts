@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { getPool } from '../db';
+import { query } from '../db';
 import { DEFAULT_PASSWORD, requireAuth, signToken, type AuthUser } from '../auth';
 import { HttpError } from '../errors';
 
@@ -39,11 +38,11 @@ router.post('/login', async (req, res) => {
   const { username, password } = loginSchema.parse(req.body);
   const ip = `${req.ip || 'unknown'}|${username.toLowerCase()}`;
   assertNotLocked(ip);
-  const r = await getPool()
-    .request()
-    .input('u', sql.NVarChar(50), username)
-    .query('SELECT Id, Username, FullName, PasswordHash, Role, Active FROM dbo.Users WHERE Username = @u');
-  const row = r.recordset[0];
+  const r = await query(
+    'SELECT Id AS "Id", Username AS "Username", FullName AS "FullName", PasswordHash AS "PasswordHash", Role AS "Role", Active AS "Active" FROM Users WHERE lower(Username) = lower(@u)',
+    { u: username },
+  );
+  const row = r.rows[0];
   if (!row || !(await bcrypt.compare(password, row.PasswordHash))) {
     registerFailure(ip);
     throw new HttpError(401, 'Usuario o contraseña incorrectos');
@@ -70,14 +69,13 @@ const passwordSchema = z.object({
 
 router.put('/password', requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = passwordSchema.parse(req.body);
-  const pool = getPool();
-  const r = await pool.request().input('id', sql.Int, req.user!.id).query('SELECT PasswordHash FROM dbo.Users WHERE Id = @id');
-  const row = r.recordset[0];
+  const r = await query('SELECT PasswordHash AS "PasswordHash" FROM Users WHERE Id = @id', { id: req.user!.id });
+  const row = r.rows[0];
   if (!row || !(await bcrypt.compare(currentPassword, row.PasswordHash))) {
     throw new HttpError(400, 'La contraseña actual no es correcta');
   }
   const hash = await bcrypt.hash(newPassword, 10);
-  await pool.request().input('id', sql.Int, req.user!.id).input('h', sql.NVarChar(200), hash).query('UPDATE dbo.Users SET PasswordHash = @h WHERE Id = @id');
+  await query('UPDATE Users SET PasswordHash = @h WHERE Id = @id', { id: req.user!.id, h: hash });
   // Nuevo token sin la marca de "debe cambiar contraseña"
   const { mustChangePassword: _m, ...user } = req.user!;
   res.json({ ok: true, token: signToken(user), user });

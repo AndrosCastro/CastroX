@@ -5,23 +5,20 @@ name: castrox
 
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres:16-alpine
     container_name: castrox-db
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
-      MSSQL_PID: ${MSSQL_PID:-Express}
-      MSSQL_MEMORY_LIMIT_MB: ${MSSQL_MEMORY_LIMIT_MB:-1024}
+      POSTGRES_USER: castrox
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
+      POSTGRES_DB: ${DB_NAME:-castrox}
     # Sin puertos publicados: la base de datos solo es accesible desde la app
     volumes:
-      - castrox-sqldata:/var/opt/mssql
-      - ./backups:/var/opt/mssql/backups
+      - castrox-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U castrox -d ${DB_NAME:-castrox}"]
+      interval: 5s
       timeout: 5s
       retries: 30
-      start_period: 40s
     restart: always
 
   app:
@@ -35,10 +32,10 @@ services:
       PORT: 3000
       ENABLE_HTTPS: "false"
       DB_HOST: db
-      DB_PORT: 1433
-      DB_USER: sa
+      DB_PORT: 5432
+      DB_USER: castrox
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME:-CastroX}
+      DB_NAME: ${DB_NAME:-castrox}
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en .env}
       JWT_EXPIRES: ${JWT_EXPIRES:-12h}
       ADMIN_USER: ${ADMIN_USER:-admin}
@@ -66,6 +63,6 @@ services:
     restart: always
 
 volumes:
-  castrox-sqldata:
+  castrox-pgdata:
   caddy-data:
   caddy-config:
