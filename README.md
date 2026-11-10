@@ -60,7 +60,19 @@ docker run --rm -e VERCEL_TOKEN -v "$PWD":/work -w /work node:24-alpine \
   sh -c 'npx -y vercel@65.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"'
 ```
 
-Otra opción: conecta el repositorio de GitHub al proyecto desde el panel de Vercel, y cada `git push` a `main` se publicará solo.
+El repositorio de GitHub ya está conectado al proyecto, así que cada `git push` a `main` se publica solo.
+
+### Respaldos automáticos
+
+Cada noche a las 2:00 am (hora de Honduras), GitHub Actions ([`.github/workflows/respaldo.yml`](.github/workflows/respaldo.yml)) hace un respaldo completo de la base de Neon y lo guarda en la rama **`respaldos`** de este repositorio, en `respaldos/castrox-AAAA-MM-DD.sql.gz`. Se conservan los últimos 60 días.
+
+- Requiere el secreto `DATABASE_URL` en GitHub: **Settings → Secrets and variables → Actions**.
+- Para hacer un respaldo en el momento: pestaña **Actions → Respaldo de la base de datos → Run workflow**.
+- Para restaurar, por ejemplo al mudarse a un VPS, descarga el archivo de la rama `respaldos` y cárgalo en una base vacía:
+
+```bash
+gunzip -c castrox-AAAA-MM-DD.sql.gz | docker exec -i castrox-db psql -U castrox -d castrox
+```
 
 ## En tu computadora (Docker)
 
